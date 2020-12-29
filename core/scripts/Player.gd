@@ -12,14 +12,16 @@ export (String) var jump_key = "ui_up"
 
 # Player movement settings
 export (int) var speed = 128
+export (int) var max_speed = 256
 export (int) var gravity = 256
 export (int) var jump_power = 256
 export (int) var snap_length = 32
 export (int) var max_floor_degree = 45
+export (bool) var double_jump_ability = true
 
 # Smoothing-related variables for player movement
-export (int) var ground_friction = 15
-export (int) var air_friction = 5
+export (int) var ground_friction = 7
+export (int) var air_friction = 13
 
 onready var player_sprite: Sprite = $CollisionShape2D/Sprite
 onready var player_on_floor: RayCast2D = $OnFloor
@@ -46,12 +48,22 @@ func _physics_process(delta: float) -> void:
 func apply_movement(delta: float) -> void:
 	if get_horizontal_input() != 0:
 		player_sprite.flip_h = get_horizontal_input() < 1
-	motion.x = get_horizontal_input() * speed
+	if get_horizontal_input() != 0:
+		motion.x = lerp(motion.x, get_horizontal_input() * speed, friction * delta)
+	else:
+		motion.x = lerp(motion.x, 0, friction * delta)
 
 func apply_jump() -> void:
-	if Input.is_action_just_pressed(jump_key) and player_on_floor.is_colliding():
-		snap_vector = Vector2.UP
-		motion.y = -jump_power
+	if Input.is_action_just_pressed(jump_key):
+		if player_on_floor.is_colliding():
+			snap_vector = Vector2.UP
+			motion.y = -jump_power
+			double_jump = true
+		else:
+			if double_jump_ability == true:
+				if double_jump == true:
+					motion.y = -jump_power
+					double_jump = false
 	else:
 		snap_vector = snap_direction * snap_length
 
